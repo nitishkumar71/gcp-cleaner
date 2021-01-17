@@ -33,7 +33,6 @@ func getGcrAuthenticator() authn.Authenticator {
 func DeleteDigestFromString(repoName string, digestIdentifier string) (bool, error) {
 
 	ref, err := gcrName.ParseReference(digestIdentifier)
-	fmt.Println("Reference Created: ", ref)
 	if err != nil {
 		return false, err
 	}

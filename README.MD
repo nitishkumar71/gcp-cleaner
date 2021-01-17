@@ -25,5 +25,6 @@ API will allow to clean up the older cloud revisions and associated container im
 	"name":"cloud service name",
 	"limit": 62, # no of images to retain
 	"projectId": "project ID"
+	"retainRevisionImage": true/false # Optional
 }
 ```

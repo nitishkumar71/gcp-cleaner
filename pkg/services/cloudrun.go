@@ -34,9 +34,10 @@ func getRunService() *run.APIService {
 }
 
 type CloudRunRequest struct {
-	Limit     uint   `json:"limit,omitempty"`
-	Name      string `json:"name" binding:"required"`
-	ProjectId string `json:"projectId" binding:"required"`
+	Limit               uint   `json:"limit,omitempty"`
+	Name                string `json:"name" binding:"required"`
+	ProjectID           string `json:"projectId" binding:"required"`
+	RetainRevisionImage bool   `json:"retainRevisionImage,omitempty"`
 }
 
 // DeleteCloudRunRevisionsPost is the handler for deleting google cloud revisions
@@ -48,7 +49,7 @@ func DeleteCloudRunRevisionsPost(c *gin.Context) {
 		return
 	}
 
-	namespace := fmt.Sprintf("namespaces/%s", request.ProjectId)
+	namespace := fmt.Sprintf("namespaces/%s", request.ProjectID)
 
 	trafficRevisions, err := getRevisionsWithTraffic(namespace, request.Name)
 	if err != nil {
@@ -56,7 +57,7 @@ func DeleteCloudRunRevisionsPost(c *gin.Context) {
 		return
 	}
 
-	revisions, err := deleteServiceRevisions(namespace, request.Name, int(request.Limit), trafficRevisions)
+	revisions, err := deleteServiceRevisions(namespace, request.Name, int(request.Limit), trafficRevisions, request.RetainRevisionImage)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, err)
 		return
@@ -65,7 +66,7 @@ func DeleteCloudRunRevisionsPost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"revisions": revisions, "length": len(revisions)})
 }
 
-func deleteServiceRevisions(namespace string, service string, limit int, trafficRevisions map[string]bool) ([]string, error) {
+func deleteServiceRevisions(namespace string, service string, limit int, trafficRevisions map[string]bool, retainRevisionImage bool) ([]string, error) {
 	//  revisions code
 	service = fmt.Sprintf("serving.knative.dev/service=%s", service)
 	namespaceService := run.NewNamespacesRevisionsService(getRunService())
@@ -97,10 +98,12 @@ func deleteServiceRevisions(namespace string, service string, limit int, traffic
 				return nil, err
 			}
 
-			repoName := revision.Spec.Containers[0].Image
-			_, err = DeleteDigestFromString(repoName, revision.Status.ImageDigest)
-			if err != nil {
-				return nil, err
+			if !retainRevisionImage {
+				repoName := revision.Spec.Containers[0].Image
+				_, err = DeleteDigestFromString(repoName, revision.Status.ImageDigest)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			revisionsDeleted = append(revisionsDeleted, revision.Metadata.Name)
