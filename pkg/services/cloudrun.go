@@ -12,6 +12,8 @@ import (
 
 // Google Cloud Run Delete Service
 // https://cloud.google.com/run
+// Enable Cloud Run Admin API - https://console.developers.google.com/apis/api/run.googleapis.com/overview
+//
 var runService *run.APIService
 var runOnce sync.Once
 
@@ -75,6 +77,7 @@ func deleteServiceRevisions(namespace string, service string, limit int, traffic
 		return nil, err
 	}
 
+	revisionService := run.NewProjectsLocationsRevisionsService(getRunService())
 	revisionsDeleted := make([]string, 0)
 	for index, revision := range revisions.Items {
 
@@ -85,21 +88,15 @@ func deleteServiceRevisions(namespace string, service string, limit int, traffic
 
 		// delete revisions not in active traffic list
 		if !trafficRevisions[revision.Metadata.Name] {
-			// fmt.Println("Revision: ", revision.Metadata.Annotations)
-			revisionFullPath := fmt.Sprintf("namespaces/%s/revisions/%s", revision.Metadata.Namespace, revision.Metadata.Name)
-			fmt.Println("Revision Full Path ", revisionFullPath)
-			// deleteCall := namespaceService.Delete(revisionFullPath)
-			// _, err = deleteCall.Do()
-			// if err != nil {
-			// 	return nil, err
-			// }
 
-			// getCall := namespaceService.Get(revisionFullPath)
-			// getResult, err := getCall.Do()
-			// if err != nil {
-			// 	return nil, err
-			// }
-			// fmt.Println("Get Result ", getResult.Metadata)
+			region := revision.Metadata.Labels["cloud.googleapis.com/location"]
+			revisionFullPath := fmt.Sprintf("projects/%s/locations/%s/revisions/%s", revision.Metadata.Namespace, region, revision.Metadata.Name)
+			deleteCall := revisionService.Delete(revisionFullPath)
+			_, err = deleteCall.Do()
+			if err != nil {
+				return nil, err
+			}
+
 			repoName := revision.Spec.Containers[0].Image
 			_, err = DeleteDigestFromString(repoName, revision.Status.ImageDigest)
 			if err != nil {
