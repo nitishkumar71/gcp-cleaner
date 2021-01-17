@@ -23,6 +23,7 @@ RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/cleaner .
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine:3.12 as ship
 
+LABEL org.opencontainers.image.source https://github.com/nitishkumar71/gcp-cleaner
 LABEL org.label-schema.license="MIT" \
     org.label-schema.vcs-url="https://github.com/nitishkumar71/gcp-cleaner" \
     org.label-schema.vcs-type="Git" \

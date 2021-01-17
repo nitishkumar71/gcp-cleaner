@@ -27,7 +27,7 @@ jobs:
           registry: ghcr.io
       - name: Get TAG
         id: get_tag
-        run: echo ::set-output name=TAG::dev
+        run: echo ::set-output name=TAG::${GITHUB_REF#refs/tags/}
       - name: Get Repo
         id: get_repo_owner
         run: echo ::set-output name=repo_owner::$(echo ${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')
